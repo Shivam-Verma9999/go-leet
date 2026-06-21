@@ -1,0 +1,20 @@
+{
+    "query": "
+    query accountSettings {
+  user {
+    socialAccounts
+    username
+    displayEmails {
+      id
+      email
+      primary
+      verified
+    }
+    phone
+    hasUsablePassword
+  }
+}
+    ",
+    "variables": {},
+    "operationName": "accountSettings"
+}

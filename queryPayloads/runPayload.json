@@ -1,0 +1,6 @@
+
+{
+    "query": "\n    query accountSettings {\n  user {\n    socialAccounts\n    username\n    displayEmails {\n      id\n      email\n      primary\n      verified\n    }\n    phone\n    hasUsablePassword\n  }\n}\n    ",
+    "variables": {},
+    "operationName": "accountSettings"
+}

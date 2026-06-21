@@ -4,10 +4,10 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"strings"
 	"time"
 
 	"github.com/Shivam-Verma9999/go-leetcode/config"
-	"github.com/Shivam-Verma9999/go-leetcode/constants"
 )
 
 type Session struct {
@@ -21,16 +21,28 @@ func New(cfg *config.Config) (*Session, error) {
 
 	// pre-load cookies
 	u, _ := url.Parse(cfg.BaseUrl)
-	jar.SetCookies(u, []*http.Cookie{
-		{
-			Name:  "cookie",
-			Value: cfg.Cookie,
-		},
-		{
-			Name:  constants.CSRFHEADER,
-			Value: cfg.CSRFToken,
-		},
-	})
+
+	var cookies []*http.Cookie
+
+	for _, pair := range strings.Split(cfg.Cookie, ";") {
+		pair := strings.Trim(pair, " ")
+		if pair == "" {
+			continue
+		}
+
+		parts := strings.SplitN(pair, "=", 2)
+
+		if len(parts) == 2 {
+			cookie:= http.Cookie{
+				Name: parts[0],
+				Value: parts[1],
+			}
+			cookies = append(cookies, &cookie)
+		}
+
+	}
+
+	jar.SetCookies(u, cookies)
 
 	if err != nil {
 		return nil, err

@@ -1,10 +1,14 @@
 package request
 
 import (
+	"fmt"
 	"io"
 	"net/http"
-)
+	"net/url"
 
+	"github.com/Shivam-Verma9999/go-leetcode/constants"
+	"github.com/Shivam-Verma9999/go-leetcode/session"
+)
 func NewRequest(method string, url string, body io.Reader) (*http.Request, error) {
 	request, err := http.NewRequest(method, url, body)
 
@@ -23,11 +27,24 @@ func NewRequest(method string, url string, body io.Reader) (*http.Request, error
 
 }
 
-func MakeRequest(request *http.Request, client *http.Client) (*http.Response, error) {
+func MakeRequest(request *http.Request, session *session.Session) (*http.Response, error) {
 
-	response, err := client.Do(request)
+	request.Header.Set(constants.CSRFHEADER, session.CSRFToken)
+
+	fmt.Println(request.Header)
+
+	response, err := session.Client.Do(request)
 	if err != nil {
 		return nil, err
+	}
+
+	u, _ := url.Parse(constants.LEETCODE_BASE)
+
+	for _, cookie := range session.Client.Jar.Cookies(u) {
+	
+		if cookie.Name == "csrftoken" {
+			session.CSRFToken = cookie.Value 
+		}
 	}
 
 	return response, nil

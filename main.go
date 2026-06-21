@@ -1,20 +1,23 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
 	"log"
 	"os"
+	"path"
 	"strings"
 
 	"github.com/Shivam-Verma9999/go-leetcode/api"
 	"github.com/Shivam-Verma9999/go-leetcode/config"
-	"github.com/Shivam-Verma9999/go-leetcode/response"
+	"github.com/Shivam-Verma9999/go-leetcode/constants"
+	response "github.com/Shivam-Verma9999/go-leetcode/responseStructs"
 	"github.com/Shivam-Verma9999/go-leetcode/session"
+	sharedstructs "github.com/Shivam-Verma9999/go-leetcode/sharedStructs"
 )
 
-func saveCodeTemplateAndTestCases(questionResponse *response.QuestionResponse) {
-	codeDir := "./code/"
-	err := os.MkdirAll(codeDir, 0644)
+func createWorkspace(questionResponse *response.QuestionResponse) {
+	err := os.MkdirAll(constants.CODE_DIR, 0644)
 
 	if err != nil {
 		log.Fatalf("Error creating ./code directory %v", err)
@@ -24,14 +27,14 @@ func saveCodeTemplateAndTestCases(questionResponse *response.QuestionResponse) {
 		log.Fatalln("Nil DataContainer for saving example test cases")
 	}
 
-	inputFile, err := os.OpenFile(codeDir+"input.txt", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	inputFile, err := os.OpenFile(path.Join(constants.CODE_DIR, "input.txt"), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 	if err != nil {
 		log.Fatalln("Error opening input.txt for writing test cases")
 	}
 
 	defer inputFile.Close()
 
-	outputFile, err := os.OpenFile(codeDir+"output.txt", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	outputFile, err := os.OpenFile(path.Join(constants.CODE_DIR, "output.txt"), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 	if err != nil {
 		log.Fatalln("Error opening output.txt for writing test cases")
 	}
@@ -56,7 +59,7 @@ func saveCodeTemplateAndTestCases(questionResponse *response.QuestionResponse) {
 
 	}
 
-	mainCodeFile, err := os.OpenFile(codeDir+"main.cpp", os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+	mainCodeFile, err := os.OpenFile(path.Join(constants.CODE_DIR, "main.cpp"), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
 	if err != nil {
 		log.Fatalf("Error opening code file, %v", err)
 	}
@@ -68,6 +71,23 @@ func saveCodeTemplateAndTestCases(questionResponse *response.QuestionResponse) {
 			mainCodeFile.WriteString(snippet.Code)
 		}
 	}
+
+	codeConfigFile, err := os.OpenFile(path.Join(constants.CODE_DIR, "codeConfig.json"), os.O_WRONLY|os.O_TRUNC|os.O_CREATE, 0644)
+
+	if err != nil {
+		log.Fatalln("Error creating codeConfig", err)
+	}
+	defer codeConfigFile.Close()
+
+	codeConfigObject := &sharedstructs.CodeConfig{
+		DataInput:  "",
+		Lang:       "cpp",
+		QuestionId: questionResponse.Data.Question.QuestionId,
+		Slug:       questionResponse.Data.Question.Slug,
+	}
+	codeConfigEncoder := json.NewEncoder(codeConfigFile)
+	codeConfigEncoder.SetIndent("", "  ")
+	codeConfigEncoder.Encode(codeConfigObject)
 
 }
 
@@ -103,7 +123,9 @@ func main() {
 		log.Fatal("Error in GetQuestion API", err)
 	}
 
-	fmt.Printf("\n question body\n %v", dataBody.Data.Question.Content)
+	fmt.Printf("\n question body\n %v\n", dataBody.Data.Question.Content)
+	createWorkspace(dataBody)
 
-	saveCodeTemplateAndTestCases(dataBody)
+	api.Run()
+
 }
