@@ -3,7 +3,6 @@ package request
 import (
 	"io"
 	"net/http"
-
 )
 
 func NewRequest(method string, url string, body io.Reader) (*http.Request, error) {
@@ -24,16 +23,12 @@ func NewRequest(method string, url string, body io.Reader) (*http.Request, error
 
 }
 
-
 func MakeRequest(request *http.Request, client *http.Client) (*http.Response, error) {
-
 
 	response, err := client.Do(request)
 	if err != nil {
 		return nil, err
 	}
-
-
 
 	return response, nil
 }
