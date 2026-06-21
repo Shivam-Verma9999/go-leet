@@ -91,14 +91,13 @@ func main() {
 
 	api := api.New(session)
 
-
 	if len(os.Args) > 1 {
 		questionSlug = os.Args[1]
 		fmt.Println("Args", os.Args[1])
 	}
 	fmt.Println(os.Args)
 
-	dataBody, err := api.GetQuestion()
+	dataBody, err := api.GetQuestion("two-sum")
 
 	if err != nil {
 		log.Fatal("Error in GetQuestion API", err)

@@ -16,15 +16,22 @@ type API struct {
 	session *session.Session
 }
 
-func New(session *session.Session ) *API {
+func New(session *session.Session) *API {
 	return &API{
 		session: session,
 	}
 }
 
-func (a *API) GetQuestion() (*response.QuestionResponse, error)  {
+func (a *API) GetQuestion(questionName string) (*response.QuestionResponse, error) {
+
+	if questionName == "" {
+		fmt.Println("Question name required")
+		return nil, fmt.Errorf("Expected QuestionName")
+	}
 
 	payload, _ := os.ReadFile("./queryPayloads/questionDetail.json")
+
+	payload = bytes.Replace(payload, []byte("<<questionName>>"), []byte(questionName), 1)
 
 	questtionReq, _ := request.NewRequest("POST", constants.LEETCODE_GQL_URL, bytes.NewBuffer(payload))
 
@@ -40,7 +47,7 @@ func (a *API) GetQuestion() (*response.QuestionResponse, error)  {
 
 	if err := json.NewDecoder(qRes.Body).Decode(&dataBody); err != nil {
 		fmt.Println("Error parsing json body", err)
-		return nil, err 
+		return nil, err
 	}
 
 	return &dataBody, nil
