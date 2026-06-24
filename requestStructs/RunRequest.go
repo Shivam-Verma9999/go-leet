@@ -1,8 +1,8 @@
 package requeststructs
 
 type Run struct {
-	DataInput  string `json:"data_input"`
+	DataInput  string `json:"data_input" omitempty`
 	Lang       string `json:"lang"`
 	QuestionId string `json:"question_id"`
-	TypeCode   string `json:"typed_code"`
+	TypedCode  string `json:"typed_code"`
 }

@@ -1,7 +1,6 @@
 package request
 
 import (
-	"fmt"
 	"io"
 	"net/http"
 	"net/url"
@@ -30,8 +29,6 @@ func NewRequest(method string, url string, body io.Reader) (*http.Request, error
 func MakeRequest(request *http.Request, session *session.Session) (*http.Response, error) {
 
 	request.Header.Set(constants.CSRFHEADER, session.CSRFToken)
-
-	fmt.Println(request.Header)
 
 	response, err := session.Client.Do(request)
 	if err != nil {

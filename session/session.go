@@ -24,7 +24,7 @@ func New(cfg *config.Config) (*Session, error) {
 
 	var cookies []*http.Cookie
 
-	for _, pair := range strings.Split(cfg.Cookie, ";") {
+	for pair := range strings.SplitSeq(cfg.Cookie, ";") {
 		pair := strings.Trim(pair, " ")
 		if pair == "" {
 			continue
@@ -33,24 +33,22 @@ func New(cfg *config.Config) (*Session, error) {
 		parts := strings.SplitN(pair, "=", 2)
 
 		if len(parts) == 2 {
-			cookie:= http.Cookie{
-				Name: parts[0],
+			cookie := http.Cookie{
+				Name:  parts[0],
 				Value: parts[1],
 			}
 			cookies = append(cookies, &cookie)
 		}
-
 	}
 
 	jar.SetCookies(u, cookies)
-
 	if err != nil {
 		return nil, err
 	}
 
 	client := &http.Client{
-		Jar:     jar,
-		Timeout: 30 * time.Second,
+		Jar:       jar,
+		Timeout:   30 * time.Second,
 	}
 
 	session := &Session{

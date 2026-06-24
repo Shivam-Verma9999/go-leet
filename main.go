@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"os"
 	"path"
@@ -94,6 +95,14 @@ func createWorkspace(questionResponse *response.QuestionResponse) {
 var questionSlug string
 
 func main() {
+	logFile, err := os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
+	if err != nil {
+		// Fallback to sddilencing if file cannot be created
+		log.SetOutput(io.Discard)
+		return
+	} else {
+		log.SetOutput(logFile)
+	}
 
 	//os.Args[0] == program name
 
@@ -127,5 +136,6 @@ func main() {
 	createWorkspace(dataBody)
 
 	api.Run()
+	//	api.Submit()
 
 }

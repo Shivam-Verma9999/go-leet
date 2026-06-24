@@ -4,10 +4,11 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"log"
 	"os"
 	"path"
+	"strconv"
+	"strings"
 
 	request "github.com/Shivam-Verma9999/go-leetcode/Request"
 	"github.com/Shivam-Verma9999/go-leetcode/constants"
@@ -82,7 +83,7 @@ func getCodeConfig() (*sharedstructs.CodeConfig, error) {
 	return &codeConfig, nil
 }
 
-func getCode() (string, error) {
+func getCodeContent() (string, error) {
 	cConfig, err := getCodeConfig()
 
 	if err != nil {
@@ -101,28 +102,37 @@ func getCode() (string, error) {
 
 }
 
-func (a *API) Run() {
-	// question session
-	cConfig, err := getCodeConfig()
+func createRunObject() requeststructs.Run {
 
+	cConfig, err := getCodeConfig()
 	if err != nil {
 		log.Fatal("Cant read code config", err)
 	}
 
 	// read the code from the code file
-	codeContent, err := getCode()
+	codeContent, err := getCodeContent()
 
 	if err != nil {
 		log.Fatal("Error reading code file", err)
 	}
-	// create Run Request
 
 	runObject := requeststructs.Run{
 		DataInput:  cConfig.DataInput,
 		Lang:       cConfig.Lang,
 		QuestionId: cConfig.QuestionId,
-		TypeCode:   codeContent,
+		TypedCode:  codeContent,
 	}
+
+	return runObject
+}
+
+func (a *API) Run() {
+	// question session
+
+	cConfig, err := getCodeConfig()
+	runObject := createRunObject()
+
+	fmt.Println("CODE: \n", runObject.TypedCode)
 
 	runObjBytes, err := json.Marshal(runObject)
 
@@ -133,8 +143,6 @@ func (a *API) Run() {
 	// send it and receive the response object
 
 	submitLink := fmt.Sprintf("%sproblems/%s/interpret_solution/", constants.LEETCODE_BASE, cConfig.Slug)
-	fmt.Println("submit link", submitLink)
-
 	runRequest, err := request.NewRequest("POST", submitLink, bytes.NewBuffer(runObjBytes))
 
 	response, err := request.MakeRequest(runRequest, a.session)
@@ -145,13 +153,139 @@ func (a *API) Run() {
 
 	defer response.Body.Close()
 
-	res, err := io.ReadAll(response.Body)
+	var resStruct map[string]any
+
+	err = json.NewDecoder(response.Body).Decode(&resStruct)
+
 	if err != nil {
-		log.Fatal("Error reading response", err)
+		log.Fatal("Error decoding response json", err)
 	}
 
-	fmt.Println(string(res))
+	interpretId := resStruct["interpret_id"].(string)
 
-	// poll back the result
+	fmt.Println("Interpret_ID:", interpretId)
+	a.getRunState(interpretId)
+
+}
+
+func (a *API) getRunState(interpret_id string) {
+
+	if interpret_id == "" {
+		fmt.Println("no interpret_id passed, passed value '", interpret_id, "'")
+	}
+
+	state := ""
+	runCheckUrl := strings.Replace(constants.RUN_CHECK_URL, constants.SUBMISSION_ID_PLACEHOLDER, interpret_id, 1)
+
+	var resObj map[string]any
+	for {
+		checkRequest, _ := request.NewRequest("GET", runCheckUrl, nil)
+
+		response, _ := request.MakeRequest(checkRequest, a.session)
+
+		defer response.Body.Close()
+
+		err := json.NewDecoder(response.Body).Decode(&resObj)
+
+		if err != nil {
+			log.Fatal("Unable to decode response json in getting run state", err)
+		}
+
+		newState := resObj["state"].(string)
+
+		if newState != state {
+			fmt.Println(resObj["state"])
+		}
+		state = newState
+
+		if state != "PENDING" && state != "STARTED" {
+			break
+		}
+
+	}
+
+	fmt.Println("====")
+	fmt.Printf("%v\n", resObj)
+
+}
+
+func (a *API) Submit() {
+	runObject := createRunObject()
+	codeConfig, _ := getCodeConfig()
+	submitLink := strings.Replace(constants.SUBMIT_URL, constants.QUESTION_SLUG_PLACEHOLDER, codeConfig.Slug, 1)
+
+	codeBytes, _ := json.Marshal(runObject)
+
+	submitRequest, _ := request.NewRequest("POST", submitLink, bytes.NewReader(codeBytes))
+
+	resp, _ := request.MakeRequest(submitRequest, a.session)
+
+	defer resp.Body.Close()
+
+	var submitRes map[string]any
+
+	fmt.Println(resp)
+
+	_ = json.NewDecoder(resp.Body).Decode(&submitRes)
+
+	fmt.Println(submitRes)
+
+	submissionId := strconv.Itoa(int(submitRes["submission_id"].(float64)))
+
+	if submissionId == "" {
+		log.Fatal("submissionId not found", submitRes)
+	}
+
+	a.checkSubmission(submissionId)
+
+}
+
+func (a *API) checkSubmission(submissionId string) {
+	fmt.Println("Got submissionId:", submissionId)
+	submitCheckUrl := strings.ReplaceAll(constants.SUBMISSION_CHECK_URL, constants.SUBMISSION_ID_PLACEHOLDER, submissionId)
+	state := ""
+	var resObj map[string]any
+
+	for {
+		subCheckReq, _ := request.NewRequest("GET", submitCheckUrl, nil)
+
+		resp, _ := request.MakeRequest(subCheckReq, a.session)
+
+		defer resp.Body.Close()
+
+		json.NewDecoder(resp.Body).Decode(&resObj)
+		if stateAny, ok := resObj["state"]; ok {
+			newState := stateAny.(string)
+
+			if newState != state {
+				fmt.Println("state:", state)
+			}
+			state = newState
+
+		} else {
+			break
+		}
+
+		if state == "SUCCESS" {
+			break
+		}
+
+	}
+
+	resBytes, _ := json.MarshalIndent(resObj, "", " ")
+
+	fmt.Println(string(resBytes))
+
+}
+
+func (a *API) ClearWorkspace(){
+
+	err := os.RemoveAll(constants.CODE_DIR)
+
+	if err != nil {
+			log.Fatal("Cannot clear workspace", err)
+	}else {
+		fmt.Println("Workspace cleared")
+	}
 
 }
