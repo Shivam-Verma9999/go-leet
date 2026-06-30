@@ -9,6 +9,7 @@ import (
 	"path"
 	"strings"
 
+	flagparser "github.com/Shivam-Verma9999/go-leetcode/FlagParser"
 	"github.com/Shivam-Verma9999/go-leetcode/api"
 	"github.com/Shivam-Verma9999/go-leetcode/config"
 	"github.com/Shivam-Verma9999/go-leetcode/constants"
@@ -95,6 +96,17 @@ func createWorkspace(questionResponse *response.QuestionResponse) {
 var questionSlug string
 
 func main() {
+
+	// parse params
+
+	fmt.Println("length", len(os.Args))
+	fmt.Println(os.Args)
+
+	flags := flagparser.Parse(os.Args[1:])
+	fmt.Println("Parsed flags", flags)
+
+	os.Exit(0)
+	
 	logFile, err := os.OpenFile("app.log", os.O_CREATE|os.O_WRONLY|os.O_APPEND, 0666)
 	if err != nil {
 		// Fallback to sddilencing if file cannot be created
