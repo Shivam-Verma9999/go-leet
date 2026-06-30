@@ -5,4 +5,3 @@ parse test cases for a question
 setup a boilerplate template for the selected question and language 
 
 1. get a problem from leetcode based questionId (which one from qId and question_slug can be used for this)
-2. 
